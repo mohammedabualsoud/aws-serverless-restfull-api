@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "order-app:PostOrders",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "order-app/template.yaml",
+                "logicalId": "PostOrders"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        }
+    ]
+}

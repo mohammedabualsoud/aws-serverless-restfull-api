@@ -1,0 +1,108 @@
+---
+swagger: "2.0"
+info:
+  version: "1.0"
+  title: "order-app"
+basePath: "/Dev"
+schemes:
+- "https"
+paths:
+  /orders:
+    get:
+      responses: {}
+      x-amazon-apigateway-integration:
+        credentials: 
+          Fn::GetAtt: [ ApiGwExecutionRole, Arn ]
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetOrders.Arn}/invocations
+        passthroughBehavior: "when_no_match"
+    post:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "200 response"
+      x-amazon-apigateway-integration:
+        type: "aws"
+        credentials: 
+          Fn::GetAtt: [ ApiGwExecutionRole, Arn ]
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${OrderQueue.QueueName}
+        responses:
+          default:
+            statusCode: "200"
+        requestParameters:
+          integration.request.header.Content-Type: "'application/x-www-form-urlencoded'"
+        requestTemplates:
+          application/json: 'Action=SendMessage&MessageBody={"data":$input.json(''$''),"cognito_userid":"$context.authorizer.claims[''cognito:username'']"}'
+
+        passthroughBehavior: "when_no_match"
+  /ordersSync:
+    post:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses: {}
+      x-amazon-apigateway-integration:
+        type: "aws_proxy"
+        credentials: 
+          Fn::GetAtt: [ ApiGwExecutionRole, Arn ]
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostOrdersSync.Arn}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+  /orders/{orderId+}:
+    get:
+      responses: {}
+      x-amazon-apigateway-integration:
+        credentials: 
+          Fn::GetAtt: [ ApiGwExecutionRole, Arn ]
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetSingleOrder.Arn}/invocations
+        passthroughBehavior: "when_no_match"
+    put:
+      produces:
+      - "application/json"
+      parameters:
+      - name: "orderId"
+        in: "path"
+        required: true
+        type: "string"
+      responses: {}
+      x-amazon-apigateway-integration:
+        credentials: 
+          Fn::GetAtt: [ ApiGwExecutionRole, Arn ]
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateOrder.Arn}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        type: "aws_proxy"
+    delete:
+      responses: {}
+      x-amazon-apigateway-integration:
+        credentials: 
+          Fn::GetAtt: [ ApiGwExecutionRole, Arn ]
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteOrder.Arn}/invocations
+        passthroughBehavior: "when_no_match"
+      security:
+        - MyCognitoAuthorizer:
+            - "order-api/delete_order"
+
+
